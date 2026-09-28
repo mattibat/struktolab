@@ -118,6 +118,19 @@ function countLoopHeader(text, lang) {
   }
 }
 
+/** The catch text is written Java-style, "Exception e". */
+function catchClause(text, lang) {
+  if (lang === "python") {
+    const match = /^\s*(\S+)\s+(\w+)\s*$/.exec(text);
+    return match ? `${match[1]} as ${match[2]}` : text;
+  }
+  if (lang === "javascript") {
+    const match = /(\w+)\s*$/.exec(text);
+    return match ? match[1] : text;
+  }
+  return text;
+}
+
 /**
  * Generate source code from a struktog tree.
  * @param {Object} tree - The struktog tree (root InsertNode)
@@ -251,7 +264,7 @@ function transform(node, level, t, lang) {
         indent(level) +
           (t.rightBracket ? t.rightBracket + " " : "") +
           t.TryCatchNode.between +
-          text +
+          catchClause(text, lang) +
           t.TryCatchNode.post +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
