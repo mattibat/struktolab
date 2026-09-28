@@ -123,6 +123,13 @@ function extractColumnWidths(str) {
   return { text: str, columnWidths: null };
 }
 
+/** A lone string literal loses its quotes, an expression like "Summe: " + s is kept as written. */
+function ioText(arg) {
+  const trimmed = arg.trim();
+  const literal = /^"([^"]*)"$/.exec(trimmed);
+  return literal ? literal[1] : trimmed;
+}
+
 /**
  * Tokenize source into lines with their indent level.
  */
@@ -393,8 +400,8 @@ function mergeBlocks(lines, baseIndent, keywords) {
   const reFuncDef = new RegExp(`^${eFunction}\\s+(\\w+)\\s*\\(([^)]*)\\)\\s*:$`, "i");
   const reSwitchBlock = new RegExp(`^${eSwitch}\\s+(.+)\\s*:$`, "i");
   const reCaseLabel = new RegExp(`^${eCase}\\s+(.+)\\s*:$`, "i");
-  const reInput = new RegExp(`^${eInput}\\s*\\(\\s*"?([^"]*)"?\\s*\\)$`, "i");
-  const reOutput = new RegExp(`^${eOutput}\\s*\\(\\s*"?([^"]*)"?\\s*\\)$`, "i");
+  const reInput = new RegExp(`^${eInput}\\s*\\((.*)\\)$`, "i");
+  const reOutput = new RegExp(`^${eOutput}\\s*\\((.*)\\)$`, "i");
 
   // First, parse all blocks individually
   const parsed = [];
@@ -595,7 +602,7 @@ function mergeBlocks(lines, baseIndent, keywords) {
     const inputMatch = text.match(reInput);
     if (inputMatch) {
       tail = makeInsert({
-        id: uid(), type: "InputNode", text: inputMatch[1],
+        id: uid(), type: "InputNode", text: ioText(inputMatch[1]),
         followElement: tail,
       });
       continue;
@@ -605,7 +612,7 @@ function mergeBlocks(lines, baseIndent, keywords) {
     const outputMatch = text.match(reOutput);
     if (outputMatch) {
       tail = makeInsert({
-        id: uid(), type: "OutputNode", text: outputMatch[1],
+        id: uid(), type: "OutputNode", text: ioText(outputMatch[1]),
         followElement: tail,
       });
       continue;

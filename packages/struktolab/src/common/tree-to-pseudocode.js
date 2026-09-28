@@ -30,6 +30,10 @@ function colWidthSuffix(node) {
   return "";
 }
 
+function ioArg(text) {
+  return text.includes('"') ? text : '"' + text + '"';
+}
+
 function serialize(node, level, lines, kw) {
   if (!node) return;
 
@@ -47,12 +51,12 @@ function serialize(node, level, lines, kw) {
       return;
 
     case "InputNode":
-      lines.push(ind(level) + kw.input + '("' + (node.text || "") + '")');
+      lines.push(ind(level) + kw.input + "(" + ioArg(node.text || "") + ")");
       serialize(node.followElement, level, lines, kw);
       return;
 
     case "OutputNode":
-      lines.push(ind(level) + kw.output + '("' + (node.text || "") + '")');
+      lines.push(ind(level) + kw.output + "(" + ioArg(node.text || "") + ")");
       serialize(node.followElement, level, lines, kw);
       return;
 
