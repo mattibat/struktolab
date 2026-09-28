@@ -134,6 +134,12 @@ export function generateCode(tree, lang = "python") {
   return transform(tree, 0, t, lang.toLowerCase()).join("");
 }
 
+function body(node, level, t, lang) {
+  const lines = transform(node, level, t, lang);
+  if (lines.length === 0 && lang === "python") return [indent(level) + "pass\n"];
+  return lines;
+}
+
 function transform(node, level, t, lang) {
   if (!node) return [];
   if (node.type === "InsertNode" || node.type === "Placeholder") {
@@ -164,9 +170,12 @@ function transform(node, level, t, lang) {
           t.BranchNode.post +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
-      lines.push(...transform(node.trueChild, level + 1, t, lang));
-      lines.push(indent(level) + t.BranchNode.between);
-      lines.push(...transform(node.falseChild, level + 1, t, lang));
+      lines.push(...body(node.trueChild, level + 1, t, lang));
+      const falseLines = transform(node.falseChild, level + 1, t, lang);
+      if (falseLines.length > 0 || lang !== "python") {
+        lines.push(indent(level) + t.BranchNode.between);
+        lines.push(...falseLines);
+      }
       if (t.rightBracket) lines.push(indent(level) + t.rightBracket + "\n");
       break;
     }
@@ -179,7 +188,7 @@ function transform(node, level, t, lang) {
           t.HeadLoopNode.post +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
-      lines.push(...transform(node.child, level + 1, t, lang));
+      lines.push(...body(node.child, level + 1, t, lang));
       if (t.rightBracket) lines.push(indent(level) + t.rightBracket + "\n");
       break;
 
@@ -191,7 +200,7 @@ function transform(node, level, t, lang) {
           t.CountLoopNode.post +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
-      lines.push(...transform(node.child, level + 1, t, lang));
+      lines.push(...body(node.child, level + 1, t, lang));
       if (t.rightBracket) lines.push(indent(level) + t.rightBracket + "\n");
       break;
 
@@ -226,7 +235,7 @@ function transform(node, level, t, lang) {
           t.FunctionNode.post +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
-      lines.push(...transform(node.child, level + 1, t, lang));
+      lines.push(...body(node.child, level + 1, t, lang));
       if (t.rightBracket) lines.push(indent(level) + t.rightBracket + "\n");
       break;
     }
@@ -237,7 +246,7 @@ function transform(node, level, t, lang) {
           t.TryCatchNode.pre +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
-      lines.push(...transform(node.tryChild, level + 1, t, lang));
+      lines.push(...body(node.tryChild, level + 1, t, lang));
       lines.push(
         indent(level) +
           (t.rightBracket ? t.rightBracket + " " : "") +
@@ -246,7 +255,7 @@ function transform(node, level, t, lang) {
           t.TryCatchNode.post +
           (t.leftBracket ? " " + t.leftBracket + "\n" : ""),
       );
-      lines.push(...transform(node.catchChild, level + 1, t, lang));
+      lines.push(...body(node.catchChild, level + 1, t, lang));
       if (t.rightBracket) lines.push(indent(level) + t.rightBracket + "\n");
       break;
     }
@@ -266,7 +275,7 @@ function transform(node, level, t, lang) {
                 c.text +
                 t.InsertCase.post,
             );
-            lines.push(...transform(c.followElement, level + 1, t, lang));
+            lines.push(...body(c.followElement, level + 1, t, lang));
             first = false;
           }
         }
@@ -275,7 +284,7 @@ function transform(node, level, t, lang) {
             indent(level) + t.InsertCase.preDefault + t.InsertCase.post,
           );
           lines.push(
-            ...transform(node.defaultNode.followElement, level + 1, t, lang),
+            ...body(node.defaultNode.followElement, level + 1, t, lang),
           );
         }
       } else {
