@@ -1,5 +1,11 @@
 # struktolab
 
+## 0.6.1
+
+### Patch Changes
+
+- 89f5590: Translate the editor UI (toolbar, menus, tooltips, screen reader labels) based on the `lang` attribute
+
 ## 0.6.0
 
 ### Minor Changes
