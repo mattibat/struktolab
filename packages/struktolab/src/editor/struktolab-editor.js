@@ -31,19 +31,124 @@ const INSERT_HEIGHT = 20;
 /** Deep enough to undo a session's worth of mistakes, bounded so it can't grow forever. */
 const HISTORY_LIMIT = 100;
 
-/** How each node type is named to a screen reader. */
-const NODE_LABELS = {
-  TaskNode: "Task",
-  InputNode: "Input",
-  OutputNode: "Output",
-  BranchNode: "If/Else",
-  CaseNode: "Switch",
-  InsertCase: "Case",
-  HeadLoopNode: "While loop",
-  FootLoopNode: "Do-While loop",
-  CountLoopNode: "For loop",
-  FunctionNode: "Function",
-  TryCatchNode: "Try/Catch",
+/**
+ * Every string the component puts on screen (or into an aria-label).
+ * The `lang` attribute picks the table: everything else in it — "en" keys
+ * included — is only a fallback for missing keys.
+ */
+const UI_STRINGS = {
+  de: {
+    undo: "Rückgängig",
+    undoTitle: "Rückgängig (Strg+Z)",
+    redo: "Wiederholen",
+    redoTitle: "Wiederholen (Strg+Umschalt+Z)",
+    view: "Ansicht",
+    viewTitle: "Sprache, Größe, Skalierung und Farben",
+    save: "Speichern",
+    saveTitle: "Struktogramm als JSON speichern",
+    load: "Laden",
+    loadTitle: "Struktogramm aus JSON-Datei laden",
+    pngTitle: "Als PNG-Bild exportieren",
+    svgTitle: "Als SVG-Bild exportieren",
+    language: "Sprache",
+    fontSize: "Schriftgröße",
+    scale: "Skalierung",
+    colours: "Farben",
+    colour: "Farbe",
+    greyscale: "Graustufen",
+    blackWhite: "Schwarz-Weiß",
+    placeholder: "Pseudocode...",
+    editorAria:
+      "Struktogramm-Editor. Pfeiltasten bewegen zwischen Knoten, Enter bearbeitet, Plus fügt ein, Entfernen löscht.",
+    structogram: "Struktogramm",
+    insertHere: "Hier einen Knoten einfügen",
+    insertNode: "{label} einfügen",
+    deleteNode: "Diesen Knoten löschen",
+    moveNode: "Diesen Knoten verschieben",
+    moveHere: "Hierher verschieben",
+    parseError: "Syntaxfehler: ",
+    nodeLabels: {
+      TaskNode: "Anweisung",
+      InputNode: "Eingabe",
+      OutputNode: "Ausgabe",
+      BranchNode: "Verzweigung",
+      CaseNode: "Fallauswahl",
+      InsertCase: "Fall",
+      HeadLoopNode: "Kopfgesteuerte Schleife",
+      FootLoopNode: "Fußgesteuerte Schleife",
+      CountLoopNode: "Zählschleife",
+      FunctionNode: "Funktion",
+      TryCatchNode: "Versuche/Fange",
+    },
+    toolbarLabels: {
+      TaskNode: "Anweisung",
+      InputNode: "Eingabe",
+      OutputNode: "Ausgabe",
+      BranchNode: "Verzweigung",
+      CaseNode: "Fallauswahl",
+      HeadLoopNode: "Kopfgesteuerte Schleife",
+      FootLoopNode: "Fußgesteuerte Schleife",
+      CountLoopNode: "Zählschleife",
+      FunctionNode: "Funktion",
+      TryCatchNode: "Versuche/Fange",
+    },
+  },
+  en: {
+    undo: "Undo",
+    undoTitle: "Undo (Ctrl+Z)",
+    redo: "Redo",
+    redoTitle: "Redo (Ctrl+Shift+Z)",
+    view: "View",
+    viewTitle: "Language, size, scale and colours",
+    save: "Save",
+    saveTitle: "Save structogram as JSON",
+    load: "Load",
+    loadTitle: "Load structogram from JSON file",
+    pngTitle: "Export as PNG image",
+    svgTitle: "Export as SVG image",
+    language: "Language",
+    fontSize: "Font size",
+    scale: "Scale",
+    colours: "Colours",
+    colour: "Color",
+    greyscale: "Greyscale",
+    blackWhite: "Black & White",
+    placeholder: "Pseudocode...",
+    editorAria:
+      "Structogram editor. Arrow keys move between nodes, Enter edits, Plus inserts, Delete removes.",
+    structogram: "Structogram",
+    insertHere: "Insert a node here",
+    insertNode: "Insert {label}",
+    deleteNode: "Delete this node",
+    moveNode: "Move this node",
+    moveHere: "Move here",
+    parseError: "Parse error: ",
+    nodeLabels: {
+      TaskNode: "Task",
+      InputNode: "Input",
+      OutputNode: "Output",
+      BranchNode: "If/Else",
+      CaseNode: "Switch",
+      InsertCase: "Case",
+      HeadLoopNode: "While loop",
+      FootLoopNode: "Do-While loop",
+      CountLoopNode: "For loop",
+      FunctionNode: "Function",
+      TryCatchNode: "Try/Catch",
+    },
+    toolbarLabels: {
+      TaskNode: "Task",
+      InputNode: "Input",
+      OutputNode: "Output",
+      BranchNode: "If/Else",
+      CaseNode: "Switch",
+      HeadLoopNode: "While",
+      FootLoopNode: "Do-While",
+      CountLoopNode: "For",
+      FunctionNode: "Function",
+      TryCatchNode: "Try/Catch",
+    },
+  },
 };
 
 /* ── Toolbar definitions ───────────────────────────────────── */
@@ -374,7 +479,7 @@ class StruktolabEditor extends HTMLElement {
     this._editorArea.setAttribute("role", "application");
     this._editorArea.setAttribute(
       "aria-label",
-      "Structogram editor. Arrow keys move between nodes, Enter edits, Plus inserts, Delete removes.",
+      this._t("editorAria"),
     );
     this._shadow.appendChild(this._editorArea);
 
@@ -383,7 +488,7 @@ class StruktolabEditor extends HTMLElement {
     this._pseudoArea.className = "pseudocode-area";
     this._textarea = document.createElement("textarea");
     this._textarea.spellcheck = false;
-    this._textarea.placeholder = "Pseudocode...";
+    this._textarea.placeholder = this._t("placeholder");
     this._pseudoArea.appendChild(this._textarea);
     this._errorEl = document.createElement("div");
     this._errorEl.className = "error";
@@ -496,10 +601,21 @@ class StruktolabEditor extends HTMLElement {
     requestAnimationFrame(() => this._initialize());
   }
 
+  _uiLang() {
+    const lang = (this.getAttribute("lang") || "de").toLowerCase();
+    return lang === "en" ? "en" : "de";
+  }
+
+  /** A UI string in the language of the `lang` attribute, English as fallback. */
+  _t(key) {
+    return (
+      UI_STRINGS[this._uiLang()][key] ?? UI_STRINGS.en[key] ?? key
+    );
+  }
+
   _getKeywords() {
     if (this._keywords) return this._keywords;
-    const lang = (this.getAttribute("lang") || "de").toLowerCase();
-    return lang === "en" ? KEYWORDS_EN : KEYWORDS_DE;
+    return this._uiLang() === "en" ? KEYWORDS_EN : KEYWORDS_DE;
   }
 
   _prepTree(tree) {
@@ -552,8 +668,18 @@ class StruktolabEditor extends HTMLElement {
     } else if (name === "embedded") {
       this._applyEmbedded();
     } else {
-      if (name === "lang" && this._langSelect)
-        this._langSelect.value = newVal || "de";
+      if (name === "lang") {
+        // Every toolbar and menu label comes from _t(), so they are all stale
+        // now. Rebuilding also closes the popover — it holds the language
+        // select the user is interacting with, so put it back up.
+        const popoverOpen =
+          this._viewPopover && this._viewPopover.style.display !== "none";
+        this._rebuildToolbar();
+        if (popoverOpen) {
+          this._toggleViewPopover(true);
+          this._langSelect?.focus();
+        }
+      }
       if (name === "font-size" && this._fsInput)
         this._fsInput.value = newVal || "14";
       if (name === "scale" && this._scaleInput)
@@ -642,15 +768,15 @@ class StruktolabEditor extends HTMLElement {
   _buildToolbar() {
     /* History */
     const history = this._group("history");
-    this._undoBtn = this._button("↶", "Undo", "Undo (Ctrl+Z)", () => this.undo());
-    this._redoBtn = this._button("↷", "Redo", "Redo (Ctrl+Shift+Z)", () => this.redo());
+    this._undoBtn = this._button("↶", this._t("undo"), this._t("undoTitle"), () => this.undo());
+    this._redoBtn = this._button("↷", this._t("redo"), this._t("redoTitle"), () => this.redo());
     history.append(this._undoBtn, this._redoBtn);
     this._historyGroup = history;
     this._historySep = this._separator();
 
     /* View settings, behind one button */
     const view = this._group("view");
-    const viewBtn = this._button("⚙", "View", "Language, size, scale and colours");
+    const viewBtn = this._button("⚙", this._t("view"), this._t("viewTitle"));
     viewBtn.setAttribute("aria-haspopup", "true");
     viewBtn.setAttribute("aria-expanded", "false");
     viewBtn.addEventListener("click", () => this._toggleViewPopover());
@@ -662,10 +788,10 @@ class StruktolabEditor extends HTMLElement {
     /* Files and export */
     const file = this._group("file");
 
-    this._saveBtn = this._button("💾", "Save", "Save structogram as JSON", () =>
+    this._saveBtn = this._button("💾", this._t("save"), this._t("saveTitle"), () =>
       this._downloadJSON(),
     );
-    this._loadBtn = this._button("📂", "Load", "Load structogram from JSON file", () =>
+    this._loadBtn = this._button("📂", this._t("load"), this._t("loadTitle"), () =>
       this._triggerLoadJSON(),
     );
     file.append(this._saveBtn, this._loadBtn);
@@ -678,11 +804,22 @@ class StruktolabEditor extends HTMLElement {
     file.appendChild(this._fileInput);
 
     file.append(
-      this._button("🖼", "PNG", "Export as PNG image", () => this._downloadImage("png")),
-      this._button("📐", "SVG", "Export as SVG image", () => this._downloadImage("svg")),
+      this._button("🖼", "PNG", this._t("pngTitle"), () => this._downloadImage("png")),
+      this._button("📐", "SVG", this._t("svgTitle"), () => this._downloadImage("svg")),
     );
 
     this._updateHistoryButtons();
+  }
+
+  /**
+   * Build the toolbar again from scratch. The labels only depend on the
+   * `lang` attribute, so this is where a language change lands.
+   */
+  _rebuildToolbar() {
+    if (!this._toolbar) return;
+    this._toolbar.replaceChildren();
+    this._buildToolbar();
+    this._applyEmbedded();
   }
 
   _buildViewPopover() {
@@ -708,7 +845,7 @@ class StruktolabEditor extends HTMLElement {
       this._keywords = null;
       this._onTreeChange();
     });
-    row("Language", langSelect);
+    row(this._t("language"), langSelect);
     this._langSelect = langSelect;
 
     const fsInput = document.createElement("input");
@@ -720,7 +857,7 @@ class StruktolabEditor extends HTMLElement {
       this.setAttribute("font-size", fsInput.value);
       this._onTreeChange();
     });
-    row("Font size", fsInput);
+    row(this._t("fontSize"), fsInput);
     this._fsInput = fsInput;
 
     const scaleInput = document.createElement("input");
@@ -738,18 +875,20 @@ class StruktolabEditor extends HTMLElement {
       }
       this._onTreeChange();
     });
-    row("Scale", scaleInput);
+    row(this._t("scale"), scaleInput);
     this._scaleInput = scaleInput;
 
     const colorModeSelect = document.createElement("select");
     colorModeSelect.innerHTML =
-      '<option value="color">Color</option><option value="greyscale">Greyscale</option><option value="bw">Black & White</option>';
+      `<option value="color">${this._t("colour")}</option>` +
+      `<option value="greyscale">${this._t("greyscale")}</option>` +
+      `<option value="bw">${this._t("blackWhite")}</option>`;
     colorModeSelect.value = this.getAttribute("color-mode") || "color";
     colorModeSelect.addEventListener("change", () => {
       this.setAttribute("color-mode", colorModeSelect.value);
       this._onTreeChange();
     });
-    row("Colours", colorModeSelect);
+    row(this._t("colours"), colorModeSelect);
     this._colorModeSelect = colorModeSelect;
 
     return pop;
@@ -908,7 +1047,7 @@ class StruktolabEditor extends HTMLElement {
     const svg = renderStructogramSVG(this._tree, { width, fontSize, colorMode });
 
     svg.setAttribute("role", "group");
-    svg.setAttribute("aria-label", "Structogram");
+    svg.setAttribute("aria-label", this._t("structogram"));
 
     // Add interactive overlays
     this._addInteractivity(svg, width, fontSize);
@@ -1490,10 +1629,12 @@ class StruktolabEditor extends HTMLElement {
     const menu = document.createElement("div");
     menu.className = "type-menu";
     menu.setAttribute("role", "menu");
-    menu.setAttribute("aria-label", "Insert a node here");
+    menu.setAttribute("aria-label", this._t("insertHere"));
 
     for (const item of TOOLBAR_ITEMS) {
-      const btn = this._button(item.icon, item.label, `Insert ${item.label}`, () => {
+      const label =
+        this._t("toolbarLabels")[item.type] ?? item.label;
+      const btn = this._button(item.icon, label, this._t("insertNode").replace("{label}", label), () => {
         this._hideTypeMenu();
         this._insertType(slotId, item.type);
       });
@@ -1694,7 +1835,7 @@ class StruktolabEditor extends HTMLElement {
       right - size,
       "✕",
       "rgb(192, 57, 43)",
-      "Delete this node",
+      this._t("deleteNode"),
       (g) =>
         g.addEventListener("click", (e) => {
           e.stopPropagation();
@@ -1706,7 +1847,7 @@ class StruktolabEditor extends HTMLElement {
       right - size * 2 - gap,
       "⠿",
       "rgb(1, 116, 96)",
-      "Move this node",
+      this._t("moveNode"),
       (g) => {
         g.setAttribute("data-grab", "move");
         g.addEventListener("pointerdown", (e) => {
@@ -1723,7 +1864,7 @@ class StruktolabEditor extends HTMLElement {
 
   /** "If/Else: a[i] > max" — what a screen reader should read out. */
   _nodeLabel(box) {
-    const name = NODE_LABELS[box.type] || box.type;
+    const name = this._t("nodeLabels")[box.type] || box.type;
     const text = (box.text || "").trim();
     return text ? `${name}: ${text}` : name;
   }
@@ -2111,7 +2252,7 @@ class StruktolabEditor extends HTMLElement {
       // The attributes go on the rect, not the group: a <g> is a container and
       // does not take focus, so a tabindex on it would be ignored.
       hit.setAttribute("role", "button");
-      hit.setAttribute("aria-label", "Move here");
+      hit.setAttribute("aria-label", this._t("moveHere"));
       hit.setAttribute("tabindex", this._moveSlots.length === 0 ? "0" : "-1");
       hit.addEventListener("focus", () => this._highlightSlot(slot));
       hit.addEventListener("mouseenter", () => this._highlightSlot(slot));
@@ -2511,7 +2652,7 @@ class StruktolabEditor extends HTMLElement {
       this._render();
       this._emitChange();
     } catch (e) {
-      this._errorEl.textContent = "Parse error: " + e.message;
+      this._errorEl.textContent = this._t("parseError") + e.message;
       this._errorEl.style.display = "block";
     }
     this._syncing = false;
