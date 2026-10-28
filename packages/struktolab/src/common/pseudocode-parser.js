@@ -619,6 +619,12 @@ function mergeBlocks(lines, baseIndent, keywords) {
     }
 
     // --- TaskNode (default) ---
+    // A line no construct claims may still have an indented body (a typo in
+    // a keyword, say). Its lines follow the task rather than vanish, so they
+    // stay visible and can be fixed.
+    if (block.children.length > 0) {
+      tail = appendChain(mergeBlocks(block.children, baseIndent + 4, keywords), tail);
+    }
     tail = makeInsert({
       id: uid(), type: "TaskNode", text: text,
       followElement: tail,
@@ -626,6 +632,24 @@ function mergeBlocks(lines, baseIndent, keywords) {
   }
 
   return tail;
+}
+
+/**
+ * Puts `tail` after the last element of `chain` (both InsertNode-rooted
+ * sequences, as mergeBlocks builds them).
+ */
+function appendChain(chain, tail) {
+  let parent = null;
+  let node = chain;
+  // Walk InsertNode → element → InsertNode … to the closing InsertNode.
+  while (node.followElement) {
+    parent = node.followElement;
+    if (parent.type === "Placeholder") return tail;
+    node = parent.followElement;
+  }
+  if (!parent) return tail;
+  parent.followElement = tail;
+  return chain;
 }
 
 /**
