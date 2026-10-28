@@ -1,5 +1,11 @@
 # struktolab
 
+## 0.6.2
+
+### Patch Changes
+
+- 38fff6b: Keep the indented lines under a line the pseudocode parser does not recognise (e.g. `while x:` instead of `repeat while x:`); they follow it instead of disappearing
+
 ## 0.6.1
 
 ### Patch Changes
