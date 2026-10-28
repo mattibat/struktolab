@@ -30,6 +30,7 @@
   ],
   "scripts": {
     "dev": "BUILD_TARGET=editor vite build --watch",
+    "test": "node --test 'src/**/*.test.js'",
     "build": "BUILD_TARGET=core vite build && BUILD_TARGET=renderer vite build && BUILD_TARGET=editor vite build",
     "build:core": "BUILD_TARGET=core vite build",
     "build:renderer": "BUILD_TARGET=renderer vite build",
